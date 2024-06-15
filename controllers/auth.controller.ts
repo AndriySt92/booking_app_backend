@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import User from '../models/user.model'
 import { httpError } from '../utils'
 import { generateTokenAndSetCookie } from '../utils'
+import { IAuthRequest, IRequest } from '../types/userTypes'
 
 export const register = async (req: Request, res: Response) => {
   const errors = validationResult(req)
@@ -61,7 +62,15 @@ export const login = async (req: Request, res: Response) => {
   })
 }
 
-export const logout = (req: Request, res: Response) => {
-  res.cookie("auth_token", '', { maxAge: 0 })
+export const validateToken = (req: IAuthRequest, res: Response) => {
+  res.status(200).send({ userId: req.user?._id })
+}
+
+export const current = async (req: IAuthRequest, res: Response) => {
+  res.json(req.user)
+}
+
+export const logout = (req: Request, res: Response): void => {
+  res.cookie('auth_token', '', { maxAge: 0 })
   res.status(200).json({ message: 'Logged out successfully' })
 }

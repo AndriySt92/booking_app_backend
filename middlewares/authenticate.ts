@@ -9,16 +9,16 @@ export const authenticate = async (req: IRequest, res: Response, next: NextFunct
     const token = req.cookies['auth_token']
 
     if (!token) {
-      throw httpError({ status: 401, message: 'Unauthorized - No Token Provided' })
+      return res.status(401).json({ error: 'Unauthorized - No Token Provided' })
     }
 
-    const { id } = jwt.verify(token, process.env.JWT_SECRET_KEY as string) as IDecodedToken
+    const { userId } = jwt.verify(token, process.env.JWT_SECRET_KEY as string) as IDecodedToken
 
-    if (!id) {
-      throw httpError({ status: 401, message: 'Unauthorized - Invalid Token' })
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid Token' })
     }
 
-    const user = await User.findById(id as string).select('-password')
+    const user = await User.findById(userId as string).select('-password')
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' })

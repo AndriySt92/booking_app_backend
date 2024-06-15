@@ -7,7 +7,7 @@ export interface IUser {
 }
 
 export interface IRequest extends Request {
-  user?: IUser
+  user: IUser
   cookies: {
     auth_token: string
   } 
@@ -19,5 +19,5 @@ export interface IAuthRequest {
 }
 
 export interface IDecodedToken {
-  id: string
+  userId: string
 }
