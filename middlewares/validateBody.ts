@@ -13,3 +13,13 @@ export const registerValidation = [
     min: 6,
   }),
 ]
+
+export const createHotelValidation = [
+  check('name', 'Name should contain at least two letters').isLength({ min: 2 }),
+  check('city', 'City is required').notEmpty(),
+  check('country', 'Country is required').notEmpty(),
+  check('description', 'Description is required').notEmpty(),
+  check('type').notEmpty().withMessage('Hotel type is required'),
+  check('pricePerNight', 'Price per night is required and must be a number').notEmpty().isNumeric(),
+  check('facilities', 'Facilities are required').notEmpty().isArray(),
+]
