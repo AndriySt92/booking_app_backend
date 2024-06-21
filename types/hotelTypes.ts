@@ -1,5 +1,3 @@
-import { IUser } from './userTypes'
-
 export interface IHotel {
   _id: string
   userId: string
@@ -29,10 +27,4 @@ export interface IBooking {
   checkIn: Date
   checkOut: Date
   totalCost: number
-}
-
-export interface ICreateHotelRequest {
-  body: IHotel
-  user?: IUser
-  files: Express.Multer.File[]
 }
