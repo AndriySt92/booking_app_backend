@@ -4,6 +4,7 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import connectToMongoDB from './db/connectDb'
 import authRoutes from "./routes/auth.route";
+import myHotelRoutes from "./routes/my-hotel.route";
 import hotelRoutes from "./routes/hotel.route";
 import { IHttpError } from './types/errorTypes'
 
@@ -20,6 +21,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/auth", authRoutes);
+app.use("/api/my-hotels", myHotelRoutes);
 app.use("/api/hotels", hotelRoutes);
 
 app.use((req: Request, res: Response): void => {

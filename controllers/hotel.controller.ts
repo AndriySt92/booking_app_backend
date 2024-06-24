@@ -3,76 +3,32 @@ import { validationResult } from 'express-validator'
 import Hotel from '../models/hotel.model'
 import { IHotel } from '../types/hotelTypes'
 import { httpError } from '../utils'
-import { uploadImages } from '../utils/uploadImages'
 
-export const createHotel = async (req: Request, res: Response) => {
-  const errors = validationResult(req)
+export const getHotels = async (req: Request, res: Response) => {
+  const { page = 1, limit = 12 } = req.query
 
-  if (!errors.isEmpty()) {
-    throw httpError({ status: 400, message: errors.array()[0].msg })
-  }
+  const offset = ((page as number) - 1) * (limit as number)
 
-  const userId = req.user?._id
-  const imageFiles = req.files as Express.Multer.File[]
-  const imageUrls = await uploadImages(imageFiles)
+  const hotels = await Hotel.find()
+    .skip(offset)
+    .limit(limit as number)
+    .sort('-lastUpdated')
 
-  const newHotel: IHotel = {
-    ...req.body,
-    userId,
-    lastUpdated: new Date(),
-    imageUrls,
-  }
+  const totalCount = await Hotel.countDocuments()
 
-  const hotel = new Hotel(newHotel)
-  await hotel.save()
-
-  return res.json({ message: 'ok' })
-}
-
-export const getMyHotels = async (req: Request, res: Response) => {
-  const hotels = await Hotel.find({ userId: req.user?._id})
-  res.json(hotels)
+  res.json({ totalCount, hotels })
 }
 
 export const getHotelById = async (req: Request, res: Response) => {
-  const hotelId = req.params.id
-
-  const hotel = await Hotel.findById({
-    _id: hotelId
-  })
-
-  if (!hotel) {
-    throw httpError({ status: 404, message: 'Hotel not found' })
-  }
-
-  res.json(hotel)
-}
-
-export const updateHotel = async (req: Request, res: Response) => {
-  const hotelId  = req.params.id
-  const userId = req.user?._id
-  const updatedHotel: IHotel = req.body
-
-  updatedHotel.lastUpdated = new Date()
-
-  const hotel = await Hotel.findOneAndUpdate(
-    {
+    const hotelId = req.params.id
+  
+    const hotel = await Hotel.findById({
       _id: hotelId,
-      userId,
-    },
-    updatedHotel,
-    { new: true },
-  )
-
-  if (!hotel) {
-    throw httpError({ status: 404, message: 'Hotel not found' })
+    })
+  
+    if (!hotel) {
+      throw httpError({ status: 404, message: 'Hotel not found' })
+    }
+  
+    res.json(hotel)
   }
-
-  const files = req.files as Express.Multer.File[]
-  const updatedImageUrls = await uploadImages(files)
-
-  hotel.imageUrls = [...updatedImageUrls, ...(updatedHotel.imageUrls || [])]
-
-  await hotel.save()
-  res.status(201).json(hotel)
-}
