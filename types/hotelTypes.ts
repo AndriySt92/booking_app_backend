@@ -28,3 +28,12 @@ export interface IBooking {
   checkOut: Date
   totalCost: number
 }
+
+export interface IHotelSearchResponse {
+  data: IHotel[];
+  pagination: {
+    total: number;
+    page: number;
+    pages: number;
+  };
+};

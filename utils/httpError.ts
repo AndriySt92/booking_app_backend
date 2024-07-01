@@ -1,6 +1,6 @@
 import { IErrorMessageList, IHttpError } from '../types/errorTypes';
 
-const errorMessageList: IErrorMessageList = {
+export const errorMessageList: IErrorMessageList = {
   400: 'Bad Request',
   401: 'Unauthorized',
   403: 'Forbidden',

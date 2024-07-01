@@ -13,7 +13,7 @@ const router = express.Router()
 router.post('/', authenticate as any, upload.array('imageFiles', 6), ctrlWrapper(createHotel))
 router.get('/', authenticate as any, ctrlWrapper(getMyHotels))
 router.get('/:id', authenticate as any, ctrlWrapper(getMyHotelById))
-router.put('/:id', authenticate as any, ctrlWrapper(updateMyHotel))
+router.put('/:id', authenticate as any, upload.array('imageFiles', 6), ctrlWrapper(updateMyHotel))
 
 
 export default router
