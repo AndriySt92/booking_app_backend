@@ -36,17 +36,17 @@ export const getMyHotels = async (req: Request, res: Response) => {
 
 export const getMyHotelById = async (req: Request, res: Response) => {
   const hotelId = req.params.id
-  
-    const hotel = await Hotel.findById({
-      _id: hotelId,
-      userId: req.user?._id,
-    })
-  
-    if (!hotel) {
-      throw httpError({ status: 404, message: 'Hotel not found' })
-    }
-  
-    res.json(hotel)
+
+  const hotel = await Hotel.findById({
+    _id: hotelId,
+    userId: req.user?._id,
+  })
+
+  if (!hotel) {
+    throw httpError({ status: 404, message: 'Hotel not found' })
+  }
+
+  res.json(hotel)
 }
 
 export const updateMyHotel = async (req: Request, res: Response) => {
@@ -78,3 +78,20 @@ export const updateMyHotel = async (req: Request, res: Response) => {
   res.status(201).json(hotel)
 }
 
+export const deleteHotel = async (req: Request, res: Response) => {
+  const { hotelId } = req.params
+  const userId = req.user?._id
+
+  const deletedHotel = await Hotel.findByIdAndDelete({
+    _id: hotelId,
+    userId,
+  })
+
+  if (!deletedHotel) {
+    throw new Error('Hotel not found or user not authorized to delete')
+  }
+
+  res.status(200).json({
+    message: 'Hotel deleted successfully',
+  })
+}

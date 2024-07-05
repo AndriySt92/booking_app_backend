@@ -58,7 +58,7 @@ export const searchHotels = async (req: Request, res: Response) => {
   if (!hotels) {
     throw httpError({ status: 404, message: 'Hotel not found' })
   }
-  
+
   const total = await Hotel.countDocuments(query)
 
   const response: IHotelSearchResponse = {
@@ -71,6 +71,46 @@ export const searchHotels = async (req: Request, res: Response) => {
   }
 
   res.json(response)
+}
+
+export const getHotelByCountry = async (req: Request, res: Response) => {
+  const { limit } = req.query
+
+  const hotels = await Hotel.aggregate([
+    {
+      $group: {
+        _id: '$country',
+        hotels: { $push: '$$ROOT' },
+        totalCount: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        country: '$_id',
+        totalCount: 1,
+        hotel: {
+          $arrayElemAt: [
+            '$hotels',
+            { $floor: { $multiply: [{ $rand: {} }, { $size: '$hotels' }] } },
+          ],
+        },
+      },
+    },
+    {
+      $project: {
+        country: 1,
+        totalCount: 1,
+        'hotel._id': 1,
+        'hotel.imageUrls': { $arrayElemAt: ['$hotel.imageUrls', 0] },
+      },
+    },
+    {
+      $limit: parseInt(limit as string) || 12,
+    },
+  ])
+  
+  res.json(hotels)
 }
 
 const constructSearchQuery = (queryParams: any) => {
