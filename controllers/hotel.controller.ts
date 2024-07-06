@@ -1,30 +1,27 @@
 import { Request, Response } from 'express'
-import { validationResult } from 'express-validator'
-import Hotel from '../models/hotel.model'
-import { IHotel, IHotelSearchResponse } from '../types/hotelTypes'
+import { IHotelSearchResponse, ISortOptions } from '../types/hotelTypes'
 import { httpError } from '../utils'
+import hotelService from '../services/hotel.service'
+import { constructSearchQuery } from '../helpers/constructSearchQuery'
+import HotelService from '../services/hotel.service'
 
 export const getHotels = async (req: Request, res: Response) => {
   const { page = 1, limit = 12 } = req.query
+  const offset = (Number(page) - 1) * Number(limit)
 
-  const offset = ((page as number) - 1) * (limit as number)
+  const { total, hotels } = await hotelService.getAll(offset, Number(limit))
 
-  const hotels = await Hotel.find()
-    .skip(offset)
-    .limit(limit as number)
-    .sort('-lastUpdated')
+  if (!hotels) {
+    throw httpError({ status: 404, message: 'Hotels not found' })
+  }
 
-  const totalCount = await Hotel.countDocuments()
-
-  res.json({ totalCount, hotels })
+  res.json({ total, hotels })
 }
 
 export const getHotelById = async (req: Request, res: Response) => {
   const hotelId = req.params.id
 
-  const hotel = await Hotel.findById({
-    _id: hotelId,
-  })
+  const hotel = await hotelService.getById(hotelId)
 
   if (!hotel) {
     throw httpError({ status: 404, message: 'Hotel not found' })
@@ -36,7 +33,7 @@ export const getHotelById = async (req: Request, res: Response) => {
 export const searchHotels = async (req: Request, res: Response) => {
   const query = constructSearchQuery(req.query)
 
-  let sortOptions = {}
+  let sortOptions: ISortOptions = {} as ISortOptions
   switch (req.query.sortOption) {
     case 'starRating':
       sortOptions = { starRating: -1 }
@@ -53,13 +50,7 @@ export const searchHotels = async (req: Request, res: Response) => {
   const pageNumber = parseInt(req.query.page ? req.query.page.toString() : '1')
   const skip = (pageNumber - 1) * pageSize
 
-  const hotels = await Hotel.find(query).sort(sortOptions).skip(skip).limit(pageSize)
-
-  if (!hotels) {
-    throw httpError({ status: 404, message: 'Hotel not found' })
-  }
-
-  const total = await Hotel.countDocuments(query)
+  const { hotels, total } = await HotelService.search(query, sortOptions, skip, pageSize)
 
   const response: IHotelSearchResponse = {
     data: hotels,
@@ -74,94 +65,9 @@ export const searchHotels = async (req: Request, res: Response) => {
 }
 
 export const getHotelByCountry = async (req: Request, res: Response) => {
-  const { limit } = req.query
+  const limit = parseInt(req.query.limit as string) || 12
 
-  const hotels = await Hotel.aggregate([
-    {
-      $group: {
-        _id: '$country',
-        hotels: { $push: '$$ROOT' },
-        totalCount: { $sum: 1 },
-      },
-    },
-    {
-      $project: {
-        _id: 0,
-        country: '$_id',
-        totalCount: 1,
-        hotel: {
-          $arrayElemAt: [
-            '$hotels',
-            { $floor: { $multiply: [{ $rand: {} }, { $size: '$hotels' }] } },
-          ],
-        },
-      },
-    },
-    {
-      $project: {
-        country: 1,
-        totalCount: 1,
-        'hotel._id': 1,
-        'hotel.imageUrls': { $arrayElemAt: ['$hotel.imageUrls', 0] },
-      },
-    },
-    {
-      $limit: parseInt(limit as string) || 12,
-    },
-  ])
-  
+  const hotels = await hotelService.getRandomHotelSummaryByCountry(limit)
+
   res.json(hotels)
-}
-
-const constructSearchQuery = (queryParams: any) => {
-  let constructedQuery: any = {}
-
-  if (queryParams.destination) {
-    constructedQuery.$or = [
-      { city: new RegExp(queryParams.destination, 'i') }, // The "i" flag stands for "ignore case", it will match "new york", "New York", "NEW YORK"
-      { country: new RegExp(queryParams.destination, 'i') },
-    ]
-  }
-
-  if (queryParams.adultCount) {
-    constructedQuery.adultCount = {
-      $gte: parseInt(queryParams.adultCount),
-    }
-  }
-
-  if (queryParams.childCount) {
-    constructedQuery.childCount = {
-      $gte: parseInt(queryParams.childCount),
-    }
-  }
-
-  if (queryParams.facilities) {
-    constructedQuery.facilities = {
-      $all: Array.isArray(queryParams.facilities)
-        ? queryParams.facilities
-        : [queryParams.facilities],
-    }
-  }
-
-  if (queryParams.types) {
-    constructedQuery.type = {
-      $in: Array.isArray(queryParams.types) ? queryParams.types : [queryParams.types],
-    }
-  }
-
-  if (queryParams.stars) {
-    const starRatings = Array.isArray(queryParams.stars)
-      ? queryParams.stars.map((star: string) => parseInt(star))
-      : parseInt(queryParams.stars)
-
-    constructedQuery.starRating = { $in: starRatings }
-  }
-
-  if (queryParams.maxPrice) {
-    constructedQuery.pricePerNight = {
-      $lte: parseInt(queryParams.maxPrice).toString(),
-    }
-  }
-
-  return constructedQuery
 }
