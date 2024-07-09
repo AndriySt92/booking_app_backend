@@ -29,7 +29,7 @@ export interface IBooking {
   totalCost: number
 }
 
-export interface ISearchQueryParams {
+export interface ISearchQuery {
   destination?: string
   adultCount?: string
   childCount?: string

@@ -1,11 +1,10 @@
 import { Request, Response } from 'express'
 import { validationResult } from 'express-validator'
-import Hotel from '../models/hotel.model'
 import { IHotel } from '../types/hotelTypes'
 import { httpError } from '../utils'
-import { uploadImages } from '../utils/uploadImages'
+import MyHotelService from '../services/my-hotel.service'
 
-export const createHotel = async (req: Request, res: Response) => {
+export const createMyHotel = async (req: Request, res: Response) => {
   const errors = validationResult(req)
 
   if (!errors.isEmpty()) {
@@ -14,37 +13,26 @@ export const createHotel = async (req: Request, res: Response) => {
 
   const userId = req.user?._id
   const imageFiles = req.files as Express.Multer.File[]
-  const imageUrls = await uploadImages(imageFiles)
+  const newHotelData = req.body
 
-  const newHotel: IHotel = {
-    ...req.body,
-    userId,
-    lastUpdated: new Date(),
-    imageUrls,
-  }
+  await MyHotelService.create(newHotelData, userId as string, imageFiles)
 
-  const hotel = new Hotel(newHotel)
-  await hotel.save()
-
-  return res.json({ message: 'ok' })
+  res.status(201).json({ message: 'Hotel created successfully' })
 }
 
 export const getMyHotels = async (req: Request, res: Response) => {
-  const hotels = await Hotel.find({ userId: req.user?._id })
+  const userId = req.user?._id
+
+  const hotels = await MyHotelService.getAll(userId as string)
+
   res.json(hotels)
 }
 
 export const getMyHotelById = async (req: Request, res: Response) => {
   const hotelId = req.params.id
+  const userId = req.user?._id
 
-  const hotel = await Hotel.findById({
-    _id: hotelId,
-    userId: req.user?._id,
-  })
-
-  if (!hotel) {
-    throw httpError({ status: 404, message: 'Hotel not found' })
-  }
+  const hotel = await MyHotelService.getById(hotelId, userId as string)
 
   res.json(hotel)
 }
@@ -52,46 +40,21 @@ export const getMyHotelById = async (req: Request, res: Response) => {
 export const updateMyHotel = async (req: Request, res: Response) => {
   const hotelId = req.params.id
   const userId = req.user?._id
-  const updatedHotel: IHotel = req.body
-
-  updatedHotel.lastUpdated = new Date()
-
-  const hotel = await Hotel.findOneAndUpdate(
-    {
-      _id: hotelId,
-      userId,
-    },
-    updatedHotel,
-    { new: true },
-  )
-
-  if (!hotel) {
-    throw httpError({ status: 404, message: 'Hotel not found' })
-  }
-
+  const updatedHotelData: IHotel = req.body
   const files = req.files as Express.Multer.File[]
-  const updatedImageUrls = await uploadImages(files)
 
-  hotel.imageUrls = [...updatedImageUrls, ...(updatedHotel.imageUrls || [])]
+  const hotel = await MyHotelService.update(updatedHotelData, hotelId, userId as string, files)
 
-  await hotel.save()
-  res.status(201).json(hotel)
+  res.json(hotel)
 }
 
-export const deleteHotel = async (req: Request, res: Response) => {
-  const { hotelId } = req.params
+export const deleteMyHotel = async (req: Request, res: Response) => {
+  const hotelId = req.params.id
   const userId = req.user?._id
 
-  const deletedHotel = await Hotel.findByIdAndDelete({
-    _id: hotelId,
-    userId,
-  })
+  const result = await MyHotelService.remove(hotelId, userId as string)
 
-  if (!deletedHotel) {
-    throw new Error('Hotel not found or user not authorized to delete')
-  }
-
-  res.status(200).json({
-    message: 'Hotel deleted successfully',
+  res.json({
+    message: result.message,
   })
 }

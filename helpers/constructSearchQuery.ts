@@ -1,6 +1,6 @@
-import { IConstructedQuery, ISearchQueryParams } from '../types/hotelTypes'
+import { IConstructedQuery, ISearchQuery } from '../types/hotelTypes'
 
-export const constructSearchQuery = (queryParams: ISearchQueryParams) => {
+export const constructSearchQuery = (queryParams: ISearchQuery) => {
   let constructedQuery: IConstructedQuery = {}
 
   if (queryParams.destination) {

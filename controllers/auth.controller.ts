@@ -1,10 +1,7 @@
 import { Request, Response } from 'express'
 import { validationResult } from 'express-validator'
-import bcrypt from 'bcryptjs'
-import User from '../models/user.model'
 import { httpError } from '../utils'
-import { generateTokenAndSetCookie } from '../utils'
-import { IAuthRequest, IRequest } from '../types/userTypes'
+import AuthService from '../services/auth.service'
 
 export const register = async (req: Request, res: Response) => {
   const errors = validationResult(req)
@@ -13,21 +10,12 @@ export const register = async (req: Request, res: Response) => {
     throw httpError({ status: 400, message: errors.array()[0].msg })
   }
 
-  const { email } = req.body
-  const user = await User.findOne({ email })
+  const registerData = req.body
 
-  if (user) {
-    throw httpError({ status: 409, message: 'Email already use' })
-  }
+  const result = await AuthService.register(registerData, res);
 
-  const newUser = await User.create({
-    ...req.body,
-  })
-
-  generateTokenAndSetCookie({ userId: newUser._id, res })
-
-  res.status(201).json({
-    message: 'User created successfully!',
+  res.status(result.status).json({
+    message: result.message,
   })
 }
 
@@ -38,35 +26,18 @@ export const login = async (req: Request, res: Response) => {
     throw httpError({ status: 400, message: errors.array()[0].msg })
   }
 
-  const { email, password } = req.body
+  const loginData = req.body
 
-  const user = await User.findOne({ email })
+  const user = await AuthService.login(loginData, res)
 
-  if (!user) {
-    throw httpError({ status: 400, message: 'Invalid username or password' })
-  }
-
-  const isPasswordCorrect = await bcrypt.compare(password, user.password)
-
-  if (!isPasswordCorrect) {
-    throw httpError({ status: 400, message: 'Invalid username or password' })
-  }
-
-  generateTokenAndSetCookie({ userId: user._id, res })
-
-  res.status(200).json({
-    _id: user._id,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
-  })
+  res.json(user)
 }
 
-export const validateToken = (req: IAuthRequest, res: Response) => {
+export const validateToken = (req: Request, res: Response) => {
   res.status(200).send({ userId: req.user?._id })
 }
 
-export const current = async (req: IAuthRequest, res: Response) => {
+export const current = async (req: Request, res: Response) => {
   res.json(req.user)
 }
 

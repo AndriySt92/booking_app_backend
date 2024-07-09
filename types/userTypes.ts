@@ -6,6 +6,9 @@ export interface IUser {
   lastName: string
 }
 
+export interface IRegisterData extends Omit<IUser, '_id'> {}
+export interface ILoginData extends Omit<IUser, '_id' | 'firstName' | 'lastName'> {}
+
 export interface IRequest extends Request {
   user: IUser
   cookies: {
@@ -13,11 +16,7 @@ export interface IRequest extends Request {
   } 
 }
 
-export interface IAuthRequest {
-  body: IUser
-  user?: IUser
-}
-
 export interface IDecodedToken {
   userId: string
 }
+

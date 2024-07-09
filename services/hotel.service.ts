@@ -1,24 +1,64 @@
+import { constructSearchQuery } from '../helpers/constructSearchQuery'
 import Hotel from '../models/hotel.model'
-import { IConstructedQuery, ISortOptions } from '../types/hotelTypes'
+import { IConstructedQuery, IHotelSearchResponse, ISearchQuery, ISortOptions } from '../types/hotelTypes'
+import { httpError } from '../utils'
 
-export const getAll = async (offset: number, limit: number) => {
+export const getAll = async (page: number, limit: number) => {
+  const offset = (Number(page) - 1) * Number(limit)
+
   const hotels = await Hotel.find().skip(offset).limit(limit).sort('-lastUpdated')
 
+  if (!hotels) {
+    throw httpError({ status: 404, message: 'Hotels not found' })
+  }
   const total = await Hotel.countDocuments()
 
   return { total, hotels }
 }
 
 export const getById = async (hotelId: string) => {
-  return await Hotel.findById(hotelId)
+  const hotel = await Hotel.findById(hotelId)
+
+  if (!hotel) {
+    throw httpError({ status: 404, message: 'Hotel not found' })
+  }
+
+  return hotel
 }
 
-export const search = async (query: IConstructedQuery, sortOptions: ISortOptions, skip: number, pageSize: number) => {
-  const hotels = await Hotel.find(query).sort(sortOptions).skip(skip).limit(pageSize);
+export const search = async (searchQuery: ISearchQuery) => {
+  const consructedQuery: IConstructedQuery = constructSearchQuery(searchQuery)
 
-  const total = await Hotel.countDocuments(query);
+  let sortOptions: ISortOptions = {} as ISortOptions
+  switch (searchQuery.sortOption) {
+    case 'starRating':
+      sortOptions = { starRating: -1 }
+      break
+    case 'pricePerNightAsc':
+      sortOptions = { pricePerNight: 1 }
+      break
+    case 'pricePerNightDesc':
+      sortOptions = { pricePerNight: -1 }
+      break
+  }
 
-  return {hotels, total};
+  const pageSize = 5
+  const pageNumber = parseInt(searchQuery.page ? searchQuery.page.toString() : '1')
+  const skip = (pageNumber - 1) * pageSize
+  const hotels = await Hotel.find(consructedQuery).sort(sortOptions).skip(skip).limit(pageSize);
+
+  const total = await Hotel.countDocuments(consructedQuery);
+
+  const response: IHotelSearchResponse = {
+    data: hotels,
+    pagination: {
+      total,
+      page: pageNumber,
+      pages: Math.ceil(total / pageSize),
+    },
+  }
+
+  return {response};
 };
 
 export const getRandomHotelSummaryByCountry = async (limit: number): Promise<any[]> => {
