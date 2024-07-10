@@ -32,3 +32,27 @@ export const getHotelByCountry = async (req: Request, res: Response) => {
 
   res.json(hotels)
 }
+
+export const createPayment = async (req: Request, res: Response) => {
+  const { numberOfNights } = req.body
+  const hotelId = req.params.id
+  const userId = req.user?._id
+
+  const { response } = await HotelService.createPayment(
+    userId as string,
+    hotelId,
+    Number(numberOfNights),
+  )
+
+  res.send(response)
+}
+
+export const createBooking = async (req: Request, res: Response) => {
+  const bookingData = req.body
+  const userId = req.user?._id
+  const hotelId = req.params.id
+ 
+  const result = await HotelService.createBooking(userId as string, hotelId, bookingData)
+
+  res.json({message: result})
+}

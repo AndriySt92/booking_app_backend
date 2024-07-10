@@ -1,7 +1,16 @@
+import Stripe from 'stripe'
 import { constructSearchQuery } from '../helpers/constructSearchQuery'
 import Hotel from '../models/hotel.model'
-import { IConstructedQuery, IHotelSearchResponse, ISearchQuery, ISortOptions } from '../types/hotelTypes'
+import {
+  IBooking,
+  IConstructedQuery,
+  IHotelSearchResponse,
+  ISearchQuery,
+  ISortOptions,
+} from '../types/hotelTypes'
 import { httpError } from '../utils'
+
+const stripe = new Stripe(process.env.STRIPE_API_KEY as string)
 
 export const getAll = async (page: number, limit: number) => {
   const offset = (Number(page) - 1) * Number(limit)
@@ -45,9 +54,9 @@ export const search = async (searchQuery: ISearchQuery) => {
   const pageSize = 5
   const pageNumber = parseInt(searchQuery.page ? searchQuery.page.toString() : '1')
   const skip = (pageNumber - 1) * pageSize
-  const hotels = await Hotel.find(consructedQuery).sort(sortOptions).skip(skip).limit(pageSize);
+  const hotels = await Hotel.find(consructedQuery).sort(sortOptions).skip(skip).limit(pageSize)
 
-  const total = await Hotel.countDocuments(consructedQuery);
+  const total = await Hotel.countDocuments(consructedQuery)
 
   const response: IHotelSearchResponse = {
     data: hotels,
@@ -58,10 +67,10 @@ export const search = async (searchQuery: ISearchQuery) => {
     },
   }
 
-  return {response};
-};
+  return { response }
+}
 
-export const getRandomHotelSummaryByCountry = async (limit: number): Promise<any[]> => {
+export const getRandomHotelSummaryByCountry = async (limit: number) => {
   return Hotel.aggregate([
     {
       $group: {
@@ -87,9 +96,80 @@ export const getRandomHotelSummaryByCountry = async (limit: number): Promise<any
   ])
 }
 
+export const createPayment = async (userId: string, hotelId: string, numberOfNights: number) => {
+  const hotel = await Hotel.findById(hotelId)
+  
+  if (!hotel) {
+    throw httpError({ status: 404, message: 'Hotel not found' })
+  }
+
+  const totalCost = hotel.pricePerNight * numberOfNights
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: totalCost * 100,
+    currency: 'eur',
+    metadata: {
+      hotelId,
+      userId: userId.toString(),
+    },
+  })
+
+  if (!paymentIntent.client_secret) {
+    throw httpError({ status: 500, message: 'Error creating payment intent' })
+  }
+
+  const response = {
+    paymentIntentId: paymentIntent.id,
+    clientSecret: paymentIntent.client_secret.toString(),
+    totalCost,
+  }
+
+  return { response }
+}
+
+export const createBooking = async (
+  userId: string,
+  hotelId: string,
+  bookingData: IBooking & { paymentIntentId: string },
+) => {
+  const { paymentIntentId, ...booking } = bookingData
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId as string)
+
+  if (!paymentIntent) {
+    throw httpError({ status: 404, message: 'Payment intent not found' })
+  }
+
+  if (paymentIntent.metadata.hotelId !== hotelId || paymentIntent.metadata.userId !== userId.toString()) {
+    throw httpError({ status: 404, message: 'Payment intent mismatch' })
+  }
+
+  const newBooking: IBooking = {
+    ...booking,
+    userId,
+  }
+
+  const hotel = await Hotel.findOneAndUpdate(
+    { _id: hotelId },
+    {
+      $push: { bookings: newBooking },
+    },
+  )
+
+  if (!hotel) {
+    throw httpError({ status: 404, message: 'Hotel not found' })
+  }
+
+  await hotel.save()
+
+  return 'Create booking successfully!'
+}
+
 export default {
   getAll,
   getById,
   search,
   getRandomHotelSummaryByCountry,
+  createPayment,
+  createBooking,
 }
