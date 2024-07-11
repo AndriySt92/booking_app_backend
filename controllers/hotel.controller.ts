@@ -56,3 +56,11 @@ export const createBooking = async (req: Request, res: Response) => {
 
   res.json({message: result})
 }
+
+export const getBookedDates = async (req: Request, res: Response) => {
+  const hotelId = req.params.id
+
+  const bookedDates = await HotelService.getBookedDates(hotelId)
+  
+  res.json(bookedDates)
+}

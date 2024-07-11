@@ -6,7 +6,8 @@ import {
   getHotelByCountry,
   searchHotels,
   createPayment,
-  createBooking
+  createBooking,
+  getBookedDates
 } from '../controllers/hotel.controller'
 import { authenticate } from '../middlewares'
 
@@ -16,6 +17,7 @@ router.get('/search', ctrlWrapper(searchHotels))
 router.get('/hotels-by-country', ctrlWrapper(getHotelByCountry))
 router.post('/:id/bookings/payment-intent', authenticate as any, ctrlWrapper(createPayment))
 router.post('/:id/bookings', authenticate as any, ctrlWrapper(createBooking))
+router.get('/:id/booked-dates', authenticate as any, ctrlWrapper(getBookedDates))
 router.get('/:id', ctrlWrapper(getHotelById))
 router.get('/', ctrlWrapper(getHotels))
 

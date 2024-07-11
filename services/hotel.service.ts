@@ -1,13 +1,14 @@
 import Stripe from 'stripe'
 import { constructSearchQuery } from '../helpers/constructSearchQuery'
 import Hotel from '../models/hotel.model'
+import Booking from '../models/booking.model'
 import {
-  IBooking,
   IConstructedQuery,
   IHotelSearchResponse,
   ISearchQuery,
   ISortOptions,
 } from '../types/hotelTypes'
+import { IBooking } from '../types/bookingTypes'
 import { httpError } from '../utils'
 
 const stripe = new Stripe(process.env.STRIPE_API_KEY as string)
@@ -98,7 +99,7 @@ export const getRandomHotelSummaryByCountry = async (limit: number) => {
 
 export const createPayment = async (userId: string, hotelId: string, numberOfNights: number) => {
   const hotel = await Hotel.findById(hotelId)
-  
+
   if (!hotel) {
     throw httpError({ status: 404, message: 'Hotel not found' })
   }
@@ -132,7 +133,7 @@ export const createBooking = async (
   hotelId: string,
   bookingData: IBooking & { paymentIntentId: string },
 ) => {
-  const { paymentIntentId, ...booking } = bookingData
+  const { paymentIntentId, ...bookingInfo } = bookingData
 
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId as string)
 
@@ -140,19 +141,25 @@ export const createBooking = async (
     throw httpError({ status: 404, message: 'Payment intent not found' })
   }
 
-  if (paymentIntent.metadata.hotelId !== hotelId || paymentIntent.metadata.userId !== userId.toString()) {
+  if (
+    paymentIntent.metadata.hotelId !== hotelId ||
+    paymentIntent.metadata.userId !== userId.toString()
+  ) {
     throw httpError({ status: 404, message: 'Payment intent mismatch' })
   }
 
   const newBooking: IBooking = {
-    ...booking,
+    ...bookingInfo,
     userId,
+    hotelId,
   }
+
+  const booking = await Booking.create(newBooking)
 
   const hotel = await Hotel.findOneAndUpdate(
     { _id: hotelId },
     {
-      $push: { bookings: newBooking },
+      $push: { bookings: booking._id },
     },
   )
 
@@ -165,6 +172,11 @@ export const createBooking = async (
   return 'Create booking successfully!'
 }
 
+export const getBookedDates = async (hotelId: string) => {
+  const bookings = await Booking.find({ hotelId }).select('checkIn checkOut')
+  return bookings
+}
+
 export default {
   getAll,
   getById,
@@ -172,4 +184,5 @@ export default {
   getRandomHotelSummaryByCountry,
   createPayment,
   createBooking,
+  getBookedDates,
 }
