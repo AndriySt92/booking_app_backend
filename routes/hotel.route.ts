@@ -3,7 +3,7 @@ import { ctrlWrapper } from '../utils'
 import {
   getHotelById,
   getHotels,
-  getHotelByCountry,
+  getHotelsCountriesSummery,
   searchHotels,
   createPayment,
   createBooking,
@@ -14,7 +14,7 @@ import { authenticate } from '../middlewares'
 const router = express.Router()
 
 router.get('/search', ctrlWrapper(searchHotels))
-router.get('/hotels-by-country', ctrlWrapper(getHotelByCountry))
+router.get('/countries-summary', ctrlWrapper(getHotelsCountriesSummery))
 router.post('/:id/bookings/payment-intent', authenticate as any, ctrlWrapper(createPayment))
 router.post('/:id/bookings', authenticate as any, ctrlWrapper(createBooking))
 router.get('/:id/booked-dates', authenticate as any, ctrlWrapper(getBookedDates))

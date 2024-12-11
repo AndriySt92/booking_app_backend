@@ -25,10 +25,10 @@ export const searchHotels = async (req: Request, res: Response) => {
   res.json(response)
 }
 
-export const getHotelByCountry = async (req: Request, res: Response) => {
+export const getHotelsCountriesSummery = async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 12
 
-  const hotels = await HotelService.getRandomHotelSummaryByCountry(limit)
+  const hotels = await HotelService.getHotelsCountriesSummery(limit)
 
   res.json(hotels)
 }

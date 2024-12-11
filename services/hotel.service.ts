@@ -71,12 +71,16 @@ export const search = async (searchQuery: ISearchQuery) => {
   return { response }
 }
 
-export const getRandomHotelSummaryByCountry = async (limit: number) => {
+export const getHotelsCountriesSummery = async (limit: number) => {
   return Hotel.aggregate([
     {
       $group: {
         _id: '$country',
-        hotels: { $push: { _id: '$_id', imageUrls: { $arrayElemAt: ['$imageUrls', 0] } } },
+        imageUrls: {
+          $push: {
+            $arrayElemAt: ['$imageUrls', 0],
+          },
+        },
         total: { $sum: 1 },
       },
     },
@@ -85,11 +89,8 @@ export const getRandomHotelSummaryByCountry = async (limit: number) => {
         _id: 0,
         country: '$_id',
         total: 1,
-        randomHotel: {
-          $arrayElemAt: [
-            '$hotels',
-            { $floor: { $multiply: [{ $rand: {} }, { $size: '$hotels' }] } },
-          ],
+        hotelImageUrl: {
+          $arrayElemAt: ['$imageUrls', 0],
         },
       },
     },
@@ -181,7 +182,7 @@ export default {
   getAll,
   getById,
   search,
-  getRandomHotelSummaryByCountry,
+  getHotelsCountriesSummery,
   createPayment,
   createBooking,
   getBookedDates,
