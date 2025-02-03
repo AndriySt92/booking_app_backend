@@ -16,11 +16,12 @@ const stripe = new Stripe(process.env.STRIPE_API_KEY as string)
 export const getAll = async (page: number, limit: number) => {
   const offset = (Number(page) - 1) * Number(limit)
 
-  const hotels = await Hotel.find().skip(offset).limit(limit).sort('-lastUpdated')
+  const hotels = await Hotel.find().skip(offset).limit(limit)
 
   if (!hotels) {
     throw httpError({ status: 404, message: 'Hotels not found' })
   }
+
   const total = await Hotel.countDocuments()
 
   return { total, hotels }
