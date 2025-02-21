@@ -9,6 +9,7 @@ export const create = async (
   imageFiles: Express.Multer.File[],
 ) => {
   const imageUrls = await uploadImages(imageFiles)
+  console.log(imageUrls)
 
   const newHotel: IHotel = {
     ...newHotelData,
@@ -16,7 +17,7 @@ export const create = async (
     lastUpdated: new Date(),
     imageUrls,
   }
-
+  console.log(newHotel)
   const hotel = await Hotel.create({
     ...newHotel,
   })
@@ -25,7 +26,7 @@ export const create = async (
 }
 
 export const getAll = async (userId: string) => {
-  return await Hotel.find({ userId })
+  return await Hotel.find({ userId }).sort({ updatedAt: -1 })
 }
 
 export const getById = async (hotelId: string, userId: string) => {
