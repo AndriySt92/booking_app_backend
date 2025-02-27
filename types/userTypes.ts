@@ -1,9 +1,12 @@
-export interface IUser {
+import { Document } from "mongoose"
+
+export interface IUser extends Document {
   _id: string
   email: string
   password: string
   firstName: string
   lastName: string
+  favorites: string[]
 }
 
 export interface IRegisterData extends Omit<IUser, '_id'> {}

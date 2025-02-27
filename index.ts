@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.route'
 import myHotelRoutes from './routes/my-hotel.route'
 import hotelRoutes from './routes/hotel.route'
 import bookingRoutes from './routes/booking.route'
+import favoriteRoutes from './routes/favorite.route'
 import { IHttpError } from './types/errorTypes'
 import { errorMessageList } from './utils/httpError'
 
@@ -30,6 +31,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/my-hotels', myHotelRoutes)
 app.use('/api/hotels', hotelRoutes)
 app.use('/api/bookings', bookingRoutes)
+app.use('/api/favorites', favoriteRoutes)
 
 app.use((req: Request, res: Response): void => {
   res.status(404).json({ message: 'Not Found' })

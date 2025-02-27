@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, { Document } from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { IUser } from '../types/userTypes'
 
@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   password: { type: String, required: true },
+  favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Hotel' }],
 })
 
 userSchema.pre('save', async function (next) {
