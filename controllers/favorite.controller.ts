@@ -27,3 +27,8 @@ export const getFavorites = async (req: Request, res: Response) => {
 
   res.json(favorites)
 }
+
+export const getFavoriteHotelIds = async (req: Request, res: Response) => {
+  const user = req.user as IUser
+  res.json(user.favorites || [])
+}
