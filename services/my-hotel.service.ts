@@ -1,4 +1,6 @@
+import Booking from '../models/booking.model'
 import Hotel from '../models/hotel.model'
+import User from '../models/user.model'
 import { IHotel } from '../types/hotelTypes'
 import { httpError } from '../utils'
 import { uploadImages } from '../utils/uploadImages'
@@ -9,7 +11,6 @@ export const create = async (
   imageFiles: Express.Multer.File[],
 ) => {
   const imageUrls = await uploadImages(imageFiles)
-  console.log(imageUrls)
 
   const newHotel: IHotel = {
     ...newHotelData,
@@ -17,7 +18,7 @@ export const create = async (
     lastUpdated: new Date(),
     imageUrls,
   }
-  console.log(newHotel)
+
   const hotel = await Hotel.create({
     ...newHotel,
   })
@@ -79,6 +80,12 @@ export const remove = async (hotelId: string, userId: string) => {
   if (!deletedHotel) {
     throw new Error('Hotel not found or user not authorized to delete')
   }
+
+  // Delete all bookings related to this hotel
+  await Booking.deleteMany({ hotelId: deletedHotel._id })
+
+  // Remove hotel from all users' favorites
+  await User.updateMany({ favorites: deletedHotel._id }, { $pull: { favorites: deletedHotel._id } })
 
   return { message: 'Hotel deleted successfully' }
 }
