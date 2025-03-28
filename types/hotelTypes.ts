@@ -41,12 +41,3 @@ export interface IConstructedQuery {
 export interface ISortOptions {
   [key: string]: 1 | -1
 }
-
-export interface IHotelSearchResponse {
-  data: IHotel[]
-  pagination: {
-    total: number
-    page: number
-    pages: number
-  }
-}

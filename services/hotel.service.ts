@@ -2,12 +2,8 @@ import Stripe from 'stripe'
 import { constructSearchQuery } from '../helpers/constructSearchQuery'
 import Hotel from '../models/hotel.model'
 import Booking from '../models/booking.model'
-import {
-  IConstructedQuery,
-  IHotelSearchResponse,
-  ISearchQuery,
-  ISortOptions,
-} from '../types/hotelTypes'
+import { IConstructedQuery, IHotel, ISearchQuery, ISortOptions } from '../types/hotelTypes'
+import { IPaginatedResponse } from '../types/commonTypes'
 import { IBooking } from '../types/bookingTypes'
 import { httpError } from '../utils'
 
@@ -60,7 +56,7 @@ export const search = async (searchQuery: ISearchQuery) => {
 
   const total = await Hotel.countDocuments(consructedQuery)
 
-  const response: IHotelSearchResponse = {
+  const response: IPaginatedResponse<IHotel> = {
     data: hotels,
     pagination: {
       total,

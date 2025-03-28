@@ -22,8 +22,9 @@ export const createMyHotel = async (req: Request, res: Response) => {
 
 export const getMyHotels = async (req: Request, res: Response) => {
   const userId = req.user?._id
+  const { page = 1, limit = 5 } = req.query
 
-  const hotels = await MyHotelService.getAll(userId as string)
+  const hotels = await MyHotelService.getAll(userId as string, Number(page), Number(limit))
 
   res.json(hotels)
 }

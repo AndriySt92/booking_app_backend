@@ -1,4 +1,5 @@
 import Hotel from '../models/hotel.model'
+import { IHotel } from '../types/hotelTypes'
 import { IUser } from '../types/userTypes'
 import { httpError } from '../utils'
 
@@ -42,14 +43,45 @@ export const remove = async (hotelId: string, user: IUser) => {
   return { message: 'Hotel removed from favorites' }
 }
 
-export const getFavorites = async (user: IUser) => {
+export const getAll = async (userId: string, page: number, limit: number) => {
+  const offset = (Number(page) - 1) * Number(limit)
+
+  const hotels = await Hotel.find({ userId }).sort({ updatedAt: -1 }).skip(offset).limit(limit)
+
+  if (!hotels) {
+    throw httpError({ status: 404, message: 'Hotels not found' })
+  }
+
+  const total = await Hotel.countDocuments()
+
+  return { total, hotels }
+}
+
+export const getFavorites = async (user: IUser, page: number, limit: number) => {
   if (!user.favorites || user.favorites.length === 0) {
     return []
   }
 
-  await user.populate('favorites')
+  const totalFavorites = user.favorites.length
+  const totalPages = Math.ceil(totalFavorites / limit)
+  const offset = (page - 1) * limit
 
-  return user.favorites
+  const { favorites } = await user.populate({
+    path: 'favorites',
+    options: {
+      skip: offset,
+      limit: limit,
+    },
+  })
+
+  return {
+    data: favorites,
+    pagination: {
+      total: totalFavorites,
+      page,
+      pages: totalPages,
+    },
+  }
 }
 
 export default {

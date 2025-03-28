@@ -1,6 +1,7 @@
 import Booking from '../models/booking.model'
 import Hotel from '../models/hotel.model'
 import User from '../models/user.model'
+import { IPaginatedResponse } from '../types/commonTypes'
 import { IHotel } from '../types/hotelTypes'
 import { httpError } from '../utils'
 import { uploadImages } from '../utils/uploadImages'
@@ -26,8 +27,27 @@ export const create = async (
   return hotel
 }
 
-export const getAll = async (userId: string) => {
-  return await Hotel.find({ userId }).sort({ updatedAt: -1 })
+export const getAll = async (userId: string, page: number, limit: number) => {
+  const offset = (page - 1) * limit
+
+  const hotels = await Hotel.find({ userId }).sort({ updatedAt: -1 }).skip(offset).limit(limit)
+
+  if (!hotels) {
+    throw httpError({ status: 404, message: 'Hotels not found' })
+  }
+
+  const total = await Hotel.countDocuments()
+
+  const response: IPaginatedResponse<IHotel> = {
+    data: hotels,
+    pagination: {
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    },
+  }
+
+  return response
 }
 
 export const getById = async (hotelId: string, userId: string) => {

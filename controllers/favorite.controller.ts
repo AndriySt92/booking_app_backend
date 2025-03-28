@@ -22,8 +22,9 @@ export const removeFavorite = async (req: Request, res: Response) => {
 
 export const getFavorites = async (req: Request, res: Response) => {
   const user = req.user
+  const { page = 1, limit = 5 } = req.query
 
-  const favorites = await FavoriteService.getFavorites(user as IUser)
+  const favorites = await FavoriteService.getFavorites(user as IUser, Number(page), Number(limit))
 
   res.json(favorites)
 }
