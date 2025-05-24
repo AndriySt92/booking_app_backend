@@ -9,7 +9,8 @@ import hotelRoutes from './routes/hotel.route'
 import bookingRoutes from './routes/booking.route'
 import favoriteRoutes from './routes/favorite.route'
 import { IHttpError } from './types/errorTypes'
-import { errorMessageList } from './utils/httpError'
+import { errorMessageList, httpError } from './utils/httpError'
+import { errorHandler } from './middlewares'
 
 const app = express()
 
@@ -33,20 +34,11 @@ app.use('/api/hotels', hotelRoutes)
 app.use('/api/bookings', bookingRoutes)
 app.use('/api/favorites', favoriteRoutes)
 
-app.use((req: Request, res: Response): void => {
-  res.status(404).json({ message: 'Not Found' })
+app.all('*', (req, _res, _next): void => {
+  throw httpError({ status: 404, message: `Route ${req.originalUrl} not found` })
 })
 
-app.use((err: IHttpError, req: Request, res: Response, next: NextFunction): void => {
-  //To avoid an error "RangeError: Invalid status code: undefined"
-  const statusCode = err.status
-  const isValidStatusCode =
-    statusCode && Number.isInteger(statusCode) && statusCode >= 100 && statusCode < 600
-  const status = isValidStatusCode ? statusCode : 500
-  const message = err.message || errorMessageList[status] || 'Internal Server Error'
-
-  res.status(status).json({ message })
-})
+app.use(errorHandler)
 
 app.listen(PORT, () => {
   connectToMongoDB()
